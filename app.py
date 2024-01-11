@@ -48,7 +48,7 @@ ip_model = IPAdapterFaceID(pipe, ip_ckpt, device)
 ip_model_plus = IPAdapterFaceIDPlus(pipe, image_encoder_path, ip_plus_ckpt, device)
 
 @spaces.GPU(enable_queue=True)
-def generate_image(images, prompt, negative_prompt, preserve_face_structure, face_strength, likeness_strength, num_samples, nfaa_negative_prompt, progress=gr.Progress(track_tqdm=True)):
+def generate_image(images, prompt, negative_prompt, preserve_face_structure, face_strength, likeness_strength, num_samples, seed, guidance_scale, nfaa_negative_prompt, progress=gr.Progress(track_tqdm=True)):
     pipe.to(device)
     app = FaceAnalysis(name="buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
     app.prepare(ctx_id=0, det_size=(640, 640))
@@ -78,7 +78,7 @@ def generate_image(images, prompt, negative_prompt, preserve_face_structure, fac
         print("Generating plus")
         image = ip_model_plus.generate(
             prompt=prompt, negative_prompt=total_negative_prompt, faceid_embeds=average_embedding,
-            scale=likeness_strength, face_image=face_image, shortcut=True, s_scale=face_strength, num_samples=num_samples, width=512, height=512, num_inference_steps=30
+            scale=likeness_strength, face_image=face_image, shortcut=True, s_scale=face_strength, num_samples=num_samples, seed=seed, guidance_scale=guidance_scale, width=512, height=512, num_inference_steps=30
         )
     print(image)
     return image
@@ -119,6 +119,8 @@ with gr.Blocks(css=css) as demo:
                 preserve = gr.Checkbox(label="Preserve Face Structure", info="Higher quality, less versatility (the face structure of your first photo will be preserved). Unchecking this will use the v1 model.", value=True)
                 face_strength = gr.Slider(label="Face Structure strength", info="Only applied if preserve face structure is checked", value=1.3, step=0.1, minimum=0, maximum=3)
                 likeness_strength = gr.Slider(label="Face Embed strength", value=1.0, step=0.1, minimum=0, maximum=5)
+                seed = gr.Slider(label="seed", value=1000, step=100, minimum=100, maximum=2000)
+                guidance_scale = gr.Slider(label="CFG", value=1.0, step=0.5, minimum=0, maximum=20) 
                 num_samples = gr.Slider(label="samples", info="Only applied if preserve face structure is checked", value=1, step=1, minimum=1, maximum=16)
                 nfaa_negative_prompts = gr.Textbox(label="Appended Negative Prompts 4 realistic vision model", info="Negative prompts to steer generations towards safe for all audiences outputs", value="deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck"    
         with gr.Column():
@@ -129,9 +131,9 @@ with gr.Blocks(css=css) as demo:
         files.upload(fn=swap_to_gallery, inputs=files, outputs=[uploaded_files, clear_button, files])
         remove_and_reupload.click(fn=remove_back_to_files, outputs=[uploaded_files, clear_button, files])
         submit.click(fn=generate_image,
-                    inputs=[files,prompt,negative_prompt,preserve, face_strength, likeness_strength, num_samples, nfaa_negative_prompts],
+                    inputs=[files,prompt,negative_prompt,preserve, face_strength, likeness_strength, seed, guidance_scale, num_samples, nfaa_negative_prompts],
                     outputs=gallery)
     
-    gr.Markdown("blah blah blah safety feature")
+    gr.Markdown("safety filter is on")
     
 demo.launch(share=True)

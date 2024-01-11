@@ -118,7 +118,7 @@ with gr.Blocks(css=css) as demo:
                        placeholder="A photo of a [man/woman/person]...")
             negative_prompt = gr.Textbox(label="Negative Prompt", placeholder="low quality")
             style = gr.Radio(label="Generation type", info="For stylized try prompts like 'a watercolor painting of a woman'", choices=["Photorealistic", "Stylized"], value="Photorealistic")
-            submit = gr.Button("Submit")
+            #submit = gr.Button("Submit")
             with gr.Accordion(open=False, label="Advanced Options"):
                 preserve = gr.Checkbox(label="Preserve Face Structure", info="Higher quality, less versatility (the face structure of your first photo will be preserved). Unchecking this will use the v1 model.", value=True)
                 face_strength = gr.Slider(label="Face Structure strength", info="Only applied if preserve face structure is checked", value=1.3, step=0.1, minimum=0, maximum=3)
@@ -129,6 +129,7 @@ with gr.Blocks(css=css) as demo:
                 nfaa_negative_prompts = gr.Textbox(label="Appended Negative Prompts 4 realistic vision model", info="Negative prompts to steer generations towards safe for all audiences outputs", value="deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck")    
         with gr.Column():
             gallery = gr.Gallery(label="Generated Images")
+            submit = gr.Button("Submit")
         style.change(fn=change_style,
                     inputs=style,
                     outputs=[preserve, face_strength, likeness_strength])

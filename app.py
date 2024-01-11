@@ -1,4 +1,5 @@
 import torch
+from torch import cuda
 import spaces
 from diffusers import StableDiffusionPipeline, DDIMScheduler, AutoencoderKL
 from transformers import AutoFeatureExtractor
@@ -10,15 +11,15 @@ from insightface.utils import face_align
 import gradio as gr
 import cv2
 
-base_model_path = "SG161222/Realistic_Vision_V4.0_noVAE"
+base_model_path = "stablediffusionapi/samaritan-3d-cartoon"
 vae_model_path = "stabilityai/sd-vae-ft-mse"
 image_encoder_path = "laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
 ip_ckpt = hf_hub_download(repo_id="h94/IP-Adapter-FaceID", filename="ip-adapter-faceid_sd15.bin", repo_type="model")
 ip_plus_ckpt = hf_hub_download(repo_id="h94/IP-Adapter-FaceID", filename="ip-adapter-faceid-plusv2_sd15.bin", repo_type="model")
 
-safety_model_id = "CompVis/stable-diffusion-safety-checker"
-safety_feature_extractor = AutoFeatureExtractor.from_pretrained(safety_model_id)
-safety_checker = StableDiffusionSafetyChecker.from_pretrained(safety_model_id)
+safety_model_id = None
+safety_feature_extractor = None
+safety_checker = None
 
 device = "cuda"
 
@@ -48,11 +49,12 @@ ip_model = IPAdapterFaceID(pipe, ip_ckpt, device)
 ip_model_plus = IPAdapterFaceIDPlus(pipe, image_encoder_path, ip_plus_ckpt, device)
 
 @spaces.GPU(enable_queue=True)
-def generate_image(images, prompt, negative_prompt, preserve_face_structure, face_strength, likeness_strength, num_samples, seed, guidance_scale, nfaa_negative_prompt, progress=gr.Progress(track_tqdm=True)):
+def generate_image(images, prompt, negative_prompt, preserve_face_structure, face_strength, likeness_strength, num_samples, guidance_scale, nfaa_negative_prompt, progress=gr.Progress(track_tqdm=True)):
+    print(cuda.memory_summary())
     pipe.to(device)
-    app = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
+    app = FaceAnalysis(name="buffalo_l", providers=['CUDAExecutionProvider','CPUExecutionProvider'])
     app.prepare(ctx_id=0, det_size=(640, 640))
-    
+    print(cuda.memory_summary())
     faceid_all_embeds = []
     first_iteration = True
     for image in images:
@@ -78,8 +80,10 @@ def generate_image(images, prompt, negative_prompt, preserve_face_structure, fac
         print("Generating plus")
         image = ip_model_plus.generate(
             prompt=prompt, negative_prompt=total_negative_prompt, faceid_embeds=average_embedding,
-            scale=likeness_strength, face_image=face_image, shortcut=True, s_scale=face_strength, num_samples=num_samples, seed=seed, guidance_scale=guidance_scale, width=512, height=512, num_inference_steps=30
+            scale=likeness_strength, face_image=face_image, shortcut=True, s_scale=face_strength, num_samples=num_samples, guidance_scale=guidance_scale, width=512, height=512, num_inference_steps=30
         )
+    
+    print(cuda.memory_summary())
     print(image)
     return image
 
@@ -119,7 +123,7 @@ with gr.Blocks(css=css) as demo:
                 preserve = gr.Checkbox(label="Preserve Face Structure", info="Higher quality, less versatility (the face structure of your first photo will be preserved). Unchecking this will use the v1 model.", value=True)
                 face_strength = gr.Slider(label="Face Structure strength", info="Only applied if preserve face structure is checked", value=1.3, step=0.1, minimum=0, maximum=3)
                 likeness_strength = gr.Slider(label="Face Embed strength", value=1.0, step=0.1, minimum=0, maximum=5)
-                seed = gr.Slider(label="seed", value=1000, step=100, minimum=100, maximum=2000)
+                #seed = gr.Slider(label="seed", value=1000, step=100, minimum=100, maximum=2000)
                 guidance_scale = gr.Slider(label="CFG", value=1.0, step=0.5, minimum=0, maximum=20) 
                 num_samples = gr.Slider(label="samples", info="Only applied if preserve face structure is checked", value=1, step=1, minimum=1, maximum=16)
                 nfaa_negative_prompts = gr.Textbox(label="Appended Negative Prompts 4 realistic vision model", info="Negative prompts to steer generations towards safe for all audiences outputs", value="deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck")    
@@ -131,9 +135,10 @@ with gr.Blocks(css=css) as demo:
         files.upload(fn=swap_to_gallery, inputs=files, outputs=[uploaded_files, clear_button, files])
         remove_and_reupload.click(fn=remove_back_to_files, outputs=[uploaded_files, clear_button, files])
         submit.click(fn=generate_image,
-                    inputs=[files,prompt,negative_prompt,preserve, face_strength, likeness_strength, seed, guidance_scale, num_samples, nfaa_negative_prompts],
+                    inputs=[files,prompt,negative_prompt,preserve, face_strength, likeness_strength, num_samples, guidance_scale, nfaa_negative_prompts],
                     outputs=gallery)
     
-    gr.Markdown("safety filter is on")
-    
+    gr.Markdown("safety filter is off, enable in lines 20-23")
+print(cuda.memory_summary())   
 demo.launch(share=True)
+

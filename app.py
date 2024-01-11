@@ -50,7 +50,7 @@ ip_model_plus = IPAdapterFaceIDPlus(pipe, image_encoder_path, ip_plus_ckpt, devi
 @spaces.GPU(enable_queue=True)
 def generate_image(images, prompt, negative_prompt, preserve_face_structure, face_strength, likeness_strength, num_samples, seed, guidance_scale, nfaa_negative_prompt, progress=gr.Progress(track_tqdm=True)):
     pipe.to(device)
-    app = FaceAnalysis(name="buffalo_l", providers=['CUDAExecutionProvider', 'CPUExecutionProvider'])
+    app = FaceAnalysis(name="buffalo_l", providers=['CPUExecutionProvider'])
     app.prepare(ctx_id=0, det_size=(640, 640))
     
     faceid_all_embeds = []

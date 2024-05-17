@@ -113,6 +113,7 @@ with gr.Blocks(css=css) as demo:
                 preserve = gr.Checkbox(label="Preserve Face Structure", info="Higher quality, less versatility (the face structure of your first photo will be preserved). Unchecking this will use the v1 model.", value=True)
                 face_strength = gr.Slider(label="Face Structure strength", info="Only applied if preserve face structure is checked", value=1.3, step=0.1, minimum=0, maximum=3)
                 likeness_strength = gr.Slider(label="Face Embed strength", value=1.0, step=0.1, minimum=0, maximum=5)
-                #seed = gr.Slider(label="seed", value=1000, step=100, minimum=100, maximum=2000)
                 guidance_scale = gr.Slider(label="CFG", value=1.0, step=0.5, minimum=0, maximum=20) 
-                num_samples =
+                num_samples = gr.Slider(label="samples", info="number of generated images", value=1, step=1, minimum=1, maximum=16)
+                nfaa_negative_prompts = gr.Textbox(label="Appended Negative Prompts 4 realistic vision model", info="Negative prompts to steer generations towards safe for all audiences outputs", value="deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands,
+

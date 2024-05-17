@@ -1,43 +1,4 @@
-Hugging Face's logo
-Hugging Face
-Search models, datasets, users...
-Models
-Datasets
-Spaces
-Posts
-Docs
-Solutions
-Pricing
 
-
-
-
-waveydaveygravy
-/
-Ip-Adapter-FaceID 
-
-like
-0
-Model card
-Files and versions
-Community
-Ip-Adapter-FaceID
-/
-app.py
-
-waveydaveygravy's picture
-waveydaveygravy
-Update app.py
-bf874f5
-VERIFIED
-4 months ago
-raw
-history
-blame
-contribute
-delete
-No virus
-7.94 kB
 import torch
 from torch import cuda
 import spaces

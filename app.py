@@ -3,7 +3,6 @@ from torch import cuda
 import spaces
 from diffusers import StableDiffusionPipeline, DDIMScheduler, AutoencoderKL
 from transformers import AutoFeatureExtractor
-from diffusers.pipelines.stable_diffusion.safety_checker import StableDiffusionSafetyChecker
 from ip_adapter.ip_adapter_faceid import IPAdapterFaceID, IPAdapterFaceIDPlus
 from huggingface_hub import hf_hub_download
 from insightface.app import FaceAnalysis
@@ -16,10 +15,6 @@ vae_model_path = "stabilityai/sd-vae-ft-mse"
 image_encoder_path = "laion/CLIP-ViT-H-14-laion2B-s32B-b79K"
 ip_ckpt = hf_hub_download(repo_id="h94/IP-Adapter-FaceID", filename="ip-adapter-faceid_sd15.bin", repo_type="model")
 ip_plus_ckpt = hf_hub_download(repo_id="h94/IP-Adapter-FaceID", filename="ip-adapter-faceid-plusv2_sd15.bin", repo_type="model")
-
-safety_model_id = None
-safety_feature_extractor = None
-safety_checker = None
 
 device = "cuda"
 
@@ -38,12 +33,7 @@ pipe = StableDiffusionPipeline.from_pretrained(
     torch_dtype=torch.float16,
     scheduler=noise_scheduler,
     vae=vae,
-    feature_extractor=safety_feature_extractor,
-    safety_checker=safety_checker
 )
-
-#pipe.load_lora_weights("h94/IP-Adapter-FaceID", weight_name="ip-adapter-faceid-plusv2_sd15_lora.safetensors")
-#pipe.fuse_lora()
 
 ip_model = IPAdapterFaceID(pipe, ip_ckpt, device)
 ip_model_plus = IPAdapterFaceIDPlus(pipe, image_encoder_path, ip_plus_ckpt, device)
@@ -125,21 +115,4 @@ with gr.Blocks(css=css) as demo:
                 likeness_strength = gr.Slider(label="Face Embed strength", value=1.0, step=0.1, minimum=0, maximum=5)
                 #seed = gr.Slider(label="seed", value=1000, step=100, minimum=100, maximum=2000)
                 guidance_scale = gr.Slider(label="CFG", value=1.0, step=0.5, minimum=0, maximum=20) 
-                num_samples = gr.Slider(label="samples", info="number of generated images", value=1, step=1, minimum=1, maximum=16)
-                nfaa_negative_prompts = gr.Textbox(label="Appended Negative Prompts 4 realistic vision model", info="Negative prompts to steer generations towards safe for all audiences outputs", value="deformed iris, deformed pupils, semi-realistic, cgi, 3d, render, sketch, cartoon, drawing, anime:1.4), text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck")    
-        with gr.Column():
-            gallery = gr.Gallery(label="Generated Images")
-            submit = gr.Button("Submit")
-        style.change(fn=change_style,
-                    inputs=style,
-                    outputs=[preserve, face_strength, likeness_strength])
-        files.upload(fn=swap_to_gallery, inputs=files, outputs=[uploaded_files, clear_button, files])
-        remove_and_reupload.click(fn=remove_back_to_files, outputs=[uploaded_files, clear_button, files])
-        submit.click(fn=generate_image,
-                    inputs=[files,prompt,negative_prompt,preserve, face_strength, likeness_strength, num_samples, guidance_scale, nfaa_negative_prompts],
-                    outputs=gallery)
-    
-    gr.Markdown("safety filter is off, enable in lines 20-23")
-print(cuda.memory_summary())   
-demo.launch(share=True)
-
+                num_samples =
